@@ -1,0 +1,64 @@
+<!-- language: HTML, file: index.html, target: iOS Bluefy Browser -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segway ZT3 Pro Unlocker</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #121212; color: #fff; text-align: center; padding-top: 50px; }
+        button { background: #ff3b30; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; }
+        button:active { background: #d72c22; }
+        #log { margin-top: 20px; font-family: monospace; white-space: pre-wrap; color: #00ff66; text-align: left; display: inline-block; width: 80%; background: #1e1e1e; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Segway ZT3 Pro D - 40 KM/H Unlock</h1>
+    <p>Ensure scooter is powered on and Bluetooth is active.</p>
+    <button id="connectBtn">Connect & Execute Unlock</button>
+    <div id="log">Idle...</div>
+
+    <script>
+        const logEl = document.getElementById('log');
+        function log(msg) { logEl.textContent += '\n' + msg; }
+
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            try {
+                log('[*] Requesting Bluetooth device...');
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [
+                        { namePrefix: 'Segway' },
+                        { namePrefix: 'Ninebot' },
+                        { namePrefix: 'ZT3' },
+                        { namePrefix: 'NB' }
+                    ],
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                });
+
+                log(`[+] Connected to device: ${device.name} (${device.id})`);
+                const server = await device.gatt.connect();
+                
+                log('[*] Discovering primary upgrade service...');
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+
+                const payloads = [
+                    new Uint8Array([0x55, 0xAA, 0x01, 0x00, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00]), // Bootloader handshake
+                    new Uint8Array([0x55, 0xAA, 0x02, 0x00, 0x10, 0x01, 0x28, 0x00, 0x3B, 0x00]), // Global profile flag
+                    new Uint8Array([0x55, 0xAA, 0x04, 0x00, 0x12, 0x02, 0x2D, 0x01, 0x00, 0x00])  // Speed limit override (45 km/h register)
+                ];
+
+                for (let i = 0; i < payloads.length; i++) {
+                    log(`[*] Transmitting patch block ${i + 1}/${payloads.length}...`);
+                    await characteristic.writeValueWithoutResponse(payloads[i]);
+                    await new Promise(r => setTimeout(r, 600));
+                }
+
+                log('[+] Unlock sequence successfully pushed. Power cycle scooter.');
+            } catch (error) {
+                log('[-] Error: ' + error);
+            }
+        });
+    </script>
+</body>
+</html>
