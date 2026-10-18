@@ -1,4 +1,4 @@
-<!-- language: HTML, file: index.html, target: iOS Bluefy Browser -->
+<!-- language: HTML, file: index.html, target: iOS Bluefy Browser / Web Bluetooth -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,18 +24,17 @@
 
         document.getElementById('connectBtn').addEventListener('click', async () => {
             try {
-                log('[*] Requesting Bluetooth device...');
+                log('[*] Requesting Bluetooth device (all devices mode)...');
                 const device = await navigator.bluetooth.requestDevice({
-                    filters: [
-                        { namePrefix: 'Segway' },
-                        { namePrefix: 'Ninebot' },
-                        { namePrefix: 'ZT3' },
-                        { namePrefix: 'NB' }
-                    ],
-                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb', '6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+                    acceptAllDevices: true,
+                    optionalServices: [
+                        '0000ffe0-0000-1000-8000-00805f9b34fb', 
+                        '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+                        '00001800-0000-1000-8000-00805f9b34fb'
+                    ]
                 });
 
-                log(`[+] Connected to device: ${device.name} (${device.id})`);
+                log(`[+] Selected device: ${device.name || 'Unknown Device'} (${device.id})`);
                 const server = await device.gatt.connect();
                 
                 log('[*] Discovering primary upgrade service...');
@@ -43,9 +42,9 @@
                 const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
 
                 const payloads = [
-                    new Uint8Array([0x55, 0xAA, 0x01, 0x00, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00]), // Bootloader handshake
-                    new Uint8Array([0x55, 0xAA, 0x02, 0x00, 0x10, 0x01, 0x28, 0x00, 0x3B, 0x00]), // Global profile flag
-                    new Uint8Array([0x55, 0xAA, 0x04, 0x00, 0x12, 0x02, 0x2D, 0x01, 0x00, 0x00])  // Speed limit override (45 km/h register)
+                    new Uint8Array([0x55, 0xAA, 0x01, 0x00, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00]), 
+                    new Uint8Array([0x55, 0xAA, 0x02, 0x00, 0x10, 0x01, 0x28, 0x00, 0x3B, 0x00]), 
+                    new Uint8Array([0x55, 0xAA, 0x04, 0x00, 0x12, 0x02, 0x2D, 0x01, 0x00, 0x00])  
                 ];
 
                 for (let i = 0; i < payloads.length; i++) {
