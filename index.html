@@ -1,4 +1,4 @@
-<!-- language: HTML, file: index.html, target: iOS Bluefy Browser / Web Bluetooth -->
+<!-- language: HTML, file: index.html, target: iOS Bluefy Browser -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,12 +24,12 @@
 
         document.getElementById('connectBtn').addEventListener('click', async () => {
             try {
-                log('[*] Requesting Bluetooth device (all devices mode)...');
+                log('[*] Requesting Bluetooth device...');
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: [
-                        '0000ffe0-0000-1000-8000-00805f9b34fb', 
                         '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+                        '0000ffe0-0000-1000-8000-00805f9b34fb',
                         '00001800-0000-1000-8000-00805f9b34fb'
                     ]
                 });
@@ -37,9 +37,9 @@
                 log(`[+] Selected device: ${device.name || 'Unknown Device'} (${device.id})`);
                 const server = await device.gatt.connect();
                 
-                log('[*] Discovering primary upgrade service...');
-                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-                const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                log('[*] Discovering Nordic UART service...');
+                const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+                const characteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
 
                 const payloads = [
                     new Uint8Array([0x55, 0xAA, 0x01, 0x00, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00]), 
